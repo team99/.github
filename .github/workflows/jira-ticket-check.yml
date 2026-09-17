@@ -1,29 +1,32 @@
 name: Jira Ticket Check
 
 on:
-  pull_request:
-    types: [opened, edited, synchronize, reopened]
+  workflow_call:
 
 jobs:
   check-jira-ticket:
     runs-on: ubuntu-latest
     steps:
       - name: Check PR title and body for Jira ticket
-        env:
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_BODY: ${{ github.event.pull_request.body }}
         run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_BODY="${{ github.event.pull_request.body }}"
           COMBINED="$PR_TITLE $PR_BODY"
 
-          # ✏️ Edit only this line — add/remove your project keys
+          # ✏️ Replace with your actual Jira project keys
           JIRA_KEYS="TSUN|SSB|STD|FTECH|BE"
           JIRA_PATTERN="(${JIRA_KEYS})-[0-9]+"
 
           if echo "$COMBINED" | grep -qE "$JIRA_PATTERN"; then
-            echo "✅ Jira ticket found."
+            echo "✅ Jira ticket found. PR is good to go."
           else
-            echo "❌ PR must include at least one Jira ticket reference."
+            echo "❌ PR rejected: No Jira ticket reference found."
+            echo ""
+            echo "   Include at least one Jira ticket in your PR title or description."
             echo "   Valid project keys: ${JIRA_KEYS//|/, }"
-            echo "   Add it to the PR title or description. Example: PROJ-123"
+            echo ""
+            echo "   Examples:"
+            echo "     PR title:  'TSUN-123: fix login bug'"
+            echo "     PR body:   'Closes TSUN-456'"
             exit 1
           fi
